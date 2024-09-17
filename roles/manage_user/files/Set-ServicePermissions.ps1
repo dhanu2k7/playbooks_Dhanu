@@ -6,6 +6,7 @@ Param (
         [string] $user
 )
 
+$script:log_filepath=c:\schneider\scriptingpath\test.txt
 # Log: Write to console or logfile
 Function Log($trace) {
     $current_time = Get-Date
@@ -420,7 +421,7 @@ try {
 
     SetServicePermissions
 $script:log_filepath
-
+$log
 
     # Write error and warning summary to end of std output
     # and log file
