@@ -1,0 +1,31 @@
+- name: Manage local user and groups
+  block:
+    - name: Ensure sl1 account is {{ sl1_account_state }}
+      ansible.windows.win_user:
+        name: "{{ sl1_account_name }}"
+        state: "{{ sl1_account_state }}"
+        password: "{{ (sl1_account_state == 'present') | ternary(sl1_account_password, omit) }}"
+        update_password: "{{ sl1_account_update_password | default('on_create') }}"
+        groups: "{{ sl1_account_admin | bool | ternary(sl1_local_admin_groups, sl1_local_non_admin_groups) }}"
+        groups_action: "{{ __remove_user | ternary('remove', 'add') }}"
+      vars:
+        __remove_user: "{{ ( sl1_account_state == 'absent' ) | bool }}"
+
+  rescue:
+    - name: Could not create user. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3004
+        rc_message: Failed to manage user or group
+
+# Load configuration winrm security for Root
+- name: Include configuration security for Root
+  ansible.builtin.include_tasks: windows_configure_permissions.yml
+  when:
+    - not sl1_account_admin | bool
+    - sl1_manage_permissions | bool
+    - sl1_account_state != "absent"

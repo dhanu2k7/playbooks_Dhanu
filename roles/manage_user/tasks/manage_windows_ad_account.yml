@@ -1,0 +1,110 @@
+---
+
+- name: Ensure a management server is selected
+  ansible.builtin.include_tasks: ad_find_management_server.yml
+
+- name: Show the chosen management host
+  delegate_to: localhost
+  run_once: true
+  ansible.builtin.debug:
+    var: groups['sl1_management_group'] | first
+
+- name: Manage windows AD tasks
+  delegate_to: "{{ groups['sl1_management_group'] | first }}"
+  run_once: true
+  when: sl1_manage_user | bool
+  block:
+    - name: Ensure Active Directory PowerShell module is available
+      ansible.windows.win_feature:
+        name: RSAT-AD-PowerShell
+        state: present
+      notify: Ensure Active Directory Powershell module is absent
+
+    - name: Block user creation
+      block:
+
+        - name: Ensure sl1 account is {{ sl1_account_state }}
+          # No need to use 'become' with all transports
+          become: >
+            {{ not (
+               ansible_winrm_transport == 'credssp' or
+               ( ansible_winrm_transport == 'kerberos' and ansible_winrm_kerberos_delegation | bool )
+               ) | bool
+            }}
+          microsoft.ad.user:
+            identity: "{{ sl1_account_name }}"
+            name: "{{ sl1_account_name }}"
+            state: "{{ sl1_account_state }}"
+            password: "{{ (sl1_account_state == 'present') | ternary(sl1_account_password, omit) }}"
+            update_password: "{{ sl1_account_update_password | default('on_create') }}"
+            upn: "{{ sl1_account_name }}@{{ ansible_facts['windows_domain'] }}"
+            groups:
+              add: "{{ sl1_account_admin | bool | ternary(sl1_ad_admin_group, omit) }}"
+            path: "{{ sl1_account_path | default(omit) }}"
+            # account_locked: "{{ sl1_account['account_locked'] | default(omit) }}"
+            # attributes: "{{ sl1_account['attributes'] | default(omit) }}"
+            # city: "{{ sl1_account['city'] | default(omit) }}"
+            # company: "{{ sl1_account['company'] | default(omit) }}"
+            # country: "{{ sl1_account['country'] | default(omit) }}"
+            # delegates: "{{ sl1_account['delegates'] | default(omit) }}"
+            # description: "{{ sl1_account['description'] | default(omit) }}"
+            # display_name: "{{ sl1_account['display_name'] | default(omit) }}"
+            # domain_password: "{{ ansible_password }}"
+            # domain_server: "{{ sl1_domain_server }}"
+            # domain_username: "{{ ansible_user }}"
+            # email: "{{ sl1_account['email'] | default(omit) }}"
+            # enabled: "{{ sl1_account['enabled'] | default(omit) }}"
+            # firstname: "{{ sl1_account['firstname'] | default(omit) }}"
+            # groups: "{{ sl1_account['groups'] | default(omit) }}"
+            # name: "{{ sl1_account['name'] | default(omit) }}"
+            # password_expired: "{{ sl1_account['password_expired'] | default(omit) }}"
+            # password_never_expires: "{{ sl1_account['password_never_expires'] | default(omit) }}"
+            # path: "{{ sl1_account['path'] | default(omit) }}"
+            # postal_code: "{{ sl1_account['postal_code'] | default(omit) }}"
+            # protect_from_deletion: "{{ sl1_account['protect_from_deletion'] | default(omit) }}"
+            # sam_account_name: "{{ sl1_account['sam_account_name'] | default(omit) }}"
+            # spn: "{{ sl1_account['spn'] | default(omit) }}"
+            # state_province: "{{ sl1_account['state_province'] | default(omit) }}"
+            # street: "{{ sl1_account['street'] | default(omit) }}"
+            # surname: "{{ sl1_account['surname'] | default(omit) }}"
+            # update_password: "{{ sl1_account['update_password'] | default(omit) }}"
+            # upn: "{{ sl1_account['upn'] | default(omit) }}"
+            # user_cannot_change_password: "{{ sl1_account['user_cannot_change_password'] | default(omit) }}"
+          register: user_management
+
+      rescue:
+
+        - name: Could not create user. Generate error.
+          ansible.builtin.include_role:
+            name: returncode
+          vars:
+            # noqa var-naming[no-role-prefix]
+            rc_support: account
+            rc_group: framework_playbook
+            rc_number: 3007
+            rc_message: "Failed to create user in AD."
+
+        - name: Ensure handlers are run
+          ansible.builtin.meta: flush_handlers
+
+        - name: Stop everything if account was not created
+          ansible.builtin.meta: end_batch
+
+      always:
+
+        - name: Debug user_management status
+          ansible.builtin.debug:
+            var: user_management
+
+  # Load groups management
+- name: Include groups management for AD user
+  ansible.builtin.include_tasks: manage_windows_{{ sl1_permissions_location }}_groups.yml
+  when: sl1_manage_permissions | bool
+
+# Load configuration winrm security for Root
+- name: Include configuration security for Root
+  ansible.builtin.include_tasks: windows_configure_permissions.yml
+  when:
+    - not sl1_account_admin | bool
+    - sl1_manage_permissions | bool
+    - sl1_account_state != "absent"

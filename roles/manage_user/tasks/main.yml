@@ -1,0 +1,15 @@
+---
+# tasks file for roles/manage_user
+
+  # Depending on scenarios, load user management tasks or user + groups tasks.
+- name: Include user management tasks
+  ansible.builtin.include_tasks: "{{ found_account_file }}"
+  vars:
+    search_account_file:
+      files:
+        - manage_{{ __sl1_os_family }}_{{ sl1_account_location }}_account_{{ sl1_permissions_location }}_groups.yml
+        - manage_{{ __sl1_os_family }}_{{ sl1_account_location }}_account.yml
+        - manage_{{ __sl1_os_family }}.yml
+      skip: true
+    found_account_file: "{{ lookup('ansible.builtin.first_found', search_account_file) }}"
+  when: found_account_file | length > 0

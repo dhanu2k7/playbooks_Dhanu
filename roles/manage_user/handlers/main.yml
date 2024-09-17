@@ -1,0 +1,20 @@
+---
+# handlers file for roles/manage_user
+
+- name: Explanation on removing of the AD Powershell module
+  ansible.builtin.debug:
+    msg: |
+      Prior to the operation, the AD powershell module was absent,
+      so it needs to be removed.
+  listen: Ensure Active Directory Powershell module is absent
+
+- name: Ensure Active Directory Powershell module is absent
+  ansible.windows.win_feature:
+    name: RSAT-AD-PowerShell
+    state: absent
+
+- name: Restart wmi
+  ansible.windows.win_service:
+    name: WinMgmt
+    state: restarted
+    force_dependent_services: true

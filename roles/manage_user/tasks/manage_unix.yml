@@ -1,0 +1,107 @@
+---
+
+- name: Manage group and user
+  become: true
+  block:
+    - name: Ensure group is present
+      ansible.builtin.group:
+        name: "{{ sl1_account_group }}"
+        state: "{{ sl1_account_state }}"
+      when:
+        - sl1_account_group | default([]) | length > 0
+        - sl1_account_state == 'present'
+
+    - name: Ensure sl1 user is {{ sl1_account_state }}
+      ansible.builtin.user:
+        name: "{{ sl1_account_name }}"
+        state: "{{ sl1_account_state }}"
+        group: "{{ sl1_account_group | default(omit) }}"
+        password: "{{ sl1_account_password | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) }}" # noqa jinja[invalid]
+        update_password: "{{ sl1_account_update_password | default(omit) }}"
+        password_lock: "{{ sl1_password_lock | default(omit) }}"
+        password_expire_max: "{{ sl1_account_password_expires_max | default(omit) }}"
+        expires: "{{ sl1_account_expires | default('-1') }}"
+        remove: "{{ sl1_account_state == 'absent' }}"
+    - block:
+        - name: Setup password max expire Linux
+          ansible.builtin.shell: chage -M {{ pwd_expire_max }} {{ sl1_account_name }}
+          when: ansible_os_family == 'RedHat'
+        - name: setup password max expire for AIX
+          ansible.builtin.shell:   |
+             chuser maxage=13 {{ sl1_account_name }}
+          when: ansible_os_family == 'AIX'
+      when: set_password is defined and set_password| bool
+    - name: remove old keys for schenider
+      lineinfile:
+         path: "/home/{{ sl1_account_name }}/.ssh/authorized_keys"
+         state: absent
+         regexp: 'SL1 Monitoring$'
+      when:
+        - sl1_account_state == 'present'
+    - name: Set up multiple authorized keys
+      ansible.posix.authorized_key:
+        user: "{{ sl1_account_name }}"
+        state: present
+        key: "{{ sl1_public_key }}"
+      when:
+        - sl1_account_state == 'present'
+        - sl1_public_key is defined
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3004
+        rc_message: Failed to create user or group
+
+# - name: Create visudo config
+#   become: true
+#   block:
+#     - name: Create visudo config
+#       ansible.builtin.template:
+#         src: 'visudo.j2'
+#         dest: '{{ sl1_visudo_template }}'
+#         mode: "400"
+#       tags:
+#         - configuration_sudo
+
+    # - name: "Ensure /etc/sudoers  contains #includedir /etc/sudoers.d"
+    #   ansible.builtin.lineinfile:
+    #     path: /etc/sudoers
+    #     regexp: '^#includedir /etc/sudoers.d'
+    #     state: absent
+    #   check_mode: true
+    #   changed_when: false
+    #   register: sudoers_includedir
+
+    # - name: Include Visudo Config
+    #   ansible.builtin.lineinfile:
+    #     dest: /etc/sudoers
+    #     regexp: '^#include {{ sl1_visudo_template }}'
+    #     firstmatch: true
+    #     insertafter: "^##include /etc/sudoers.d/1xx_*"
+    #     line: '#include {{ sl1_visudo_template }}'
+    #     state: present
+    #   when: not sudoers_includedir.found
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_success: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3005
+        rc_message: "Failed to create visudo config"

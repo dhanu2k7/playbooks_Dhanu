@@ -1,0 +1,25 @@
+---
+# vars file for roles/manage_user
+
+# transports that allow AD accounts management from domain members
+# see https://docs.ansible.com/ansible/latest/os_guide/windows_winrm.html#winrm-authentication-options
+sl1_domain_members_winrm_transport_supported:
+  - kerberos
+  - ntlm
+  - credssp
+
+sl1_ad_admin_group:
+  - "Domain Admins"
+
+sl1_local_non_admin_groups:
+  - "Distributed COM Users"
+  - "Event Log Readers"
+  - "Performance Log Users"
+  - "Performance Monitor Users"
+  - "Remote Management Users"
+
+sl1_local_admin_groups:
+  - "Administrators"
+  - "Remote Desktop Users"
+
+__sl1_os_family: "{{ (ansible_facts['os_family'] | lower == 'windows') | ternary('windows', 'unix') }}"

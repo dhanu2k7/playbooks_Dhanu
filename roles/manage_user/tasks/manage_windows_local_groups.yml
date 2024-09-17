@@ -1,0 +1,42 @@
+---
+  # this is slow
+- name: Manage local groups of the AD user, when host is a domain member. State is "{{ sl1_account_state }}"
+  ansible.windows.win_group_membership:
+    members: "{{ sl1_account_name }}"
+    state: "{{ sl1_account_state }}"
+    name: "{{ item }}"
+  loop: "{{ __groups }}"
+  vars:
+    __groups: "{{ sl1_account_admin | bool | ternary(sl1_local_admin_groups,sl1_local_non_admin_groups) }}"
+  when: >
+    'primary-domain-controller' not in group_names
+  register: windows_membership
+  failed_when:
+    - windows_membership is failed
+    - "'account_name ' + sl1_account_name + ' is not a valid account' not in windows_membership.msg"
+
+#  # this is faster but does not work on domain members, only on DC
+# - name: Ensure sl1 account is {{ sl1_account_state }}
+#   ansible.windows.win_user:
+#     name: "{{ sl1_account_name }}"
+#     state: "{{ sl1_account_state }}"
+#     groups: "{{ sl1_account_admin | bool | ternary(sl1_local_admin_groups,sl1_local_non_admin_groups) }}"
+#     groups_action: "{{ __remove_user | ternary('remove','add') }}"
+#     update_password: on_create
+#   vars:
+#     __groups: "{{ sl1_account_admin | bool | ternary(sl1_local_admin_groups,sl1_local_non_admin_groups) }}"
+#     __remove_user: "{{ ( sl1_account_state == 'absent' ) | bool }}"
+
+  # this is a specific case because there are no local user on a DC
+- name: Manage local groups of the AD user, when host is a domain controller. State is "{{ sl1_account_state }}"
+  microsoft.ad.user:
+    name: "{{ sl1_account_name }}"
+    state: "{{ sl1_account_state }}"
+    groups:
+      add: "{{ (not __remove_user) | ternary(__groups, omit) }}"
+      remove: "{{ __remove_user | ternary(__groups, omit) }}"
+  vars:
+    __groups: "{{ sl1_account_admin | bool | ternary(sl1_local_admin_groups,sl1_local_non_admin_groups) }}"
+    __remove_user: "{{ ( sl1_account_state == 'absent' ) | bool }}"
+  when: >
+    'primary-domain-controller' in group_names

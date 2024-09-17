@@ -1,0 +1,31 @@
+---
+- name: Configuration of WMI
+  block:
+    - name: Config security for RootSDDL
+      ansible.windows.win_powershell:
+        script: "{{ lookup('file', 'Set-WmiNamespaceSecurity.ps1') }}"
+        parameters:
+          user: "{{ sl1_account_name }}"
+          log_filepath: 'C:\\schneider\\scriptingpath\\'
+          debug_all: true
+      notify:
+        - Restart wmi
+
+    - name: Allow user to check services
+      ansible.windows.win_powershell:
+        script: "{{ lookup('file', 'Set-ServicePermissions.ps1') }}"
+        parameters:
+          user: "{{ sl1_account_name }}"
+          log_filepath: 'C:\\schneider\\scriptingpath\\'
+          debug_all: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: "Failed to configure WMI and restart service"
