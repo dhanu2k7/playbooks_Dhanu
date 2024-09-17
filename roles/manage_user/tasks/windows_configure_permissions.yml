@@ -14,9 +14,6 @@
         script: "{{ lookup('file', 'Set-ServicePermissions.ps1') }}"
         parameters:
           user: "{{ sl1_account_name }}"
-          log_filepath: 'C:\\schneider\\scriptingpath\\'
-          debug_all: true
-
   rescue:
     - name: Could not create user. Generate error.
       debug:
