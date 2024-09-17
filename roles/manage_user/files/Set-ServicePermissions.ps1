@@ -6,7 +6,7 @@ Param (
         [string] $user
 )
 
-$script:log_filepath=c:\schneider\scriptingpath\test_log.txt
+
 # Log: Write to console or logfile
 Function Log($trace) {
     $current_time = Get-Date
@@ -398,7 +398,8 @@ $GENERIC_ALL = 0x10000000
 $NOT_ADMIN = "You do not have Administrator rights for successful use of this utility. Please run this script as an Administrator."
 $script:original_settings_path = ""
 $script:original_settings_file = "silo_winrm_original_settings.log"
-
+$script:log_filepath=c:\schneider\scriptingpath\test_log.txt
+$debug_all= true
 # Setup logging to a file location on the Windows computer
 $logfile_name = "silo_winrm_config.log"   # Default logfile name if no override from command-line
 
