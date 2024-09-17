@@ -338,7 +338,7 @@ Function CreateFinalSDDL([String] $user_sid, [String] $insertion_string, [String
     LogDebug "CreateFinalSDDL: Exit and returning final SDDL `"$final_sddl`""
     return $final_sddl
 }
-Start-Transcript -Path C:\schneider\scriptingpath\test.txt
+Start-Transcript C:\schneider\scriptingpath\test.txt
 # Script variables - values are passed in or later set through dialog entry
 $script:major_ps_ver = 1
 $script:set_wmi_inherit_obj = $false
