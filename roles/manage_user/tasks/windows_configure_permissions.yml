@@ -7,7 +7,6 @@
         parameters:
           user: "{{ sl1_account_name }}"
           log_filepath: 'C:\\schneider\\scriptingpath\\'
-          debug_all: true
       notify:
         - Restart wmi
 
