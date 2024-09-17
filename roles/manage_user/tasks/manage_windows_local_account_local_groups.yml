@@ -13,15 +13,9 @@
 
   rescue:
     - name: Could not create user. Generate error.
-      ansible.builtin.include_role:
-        name: returncode
-      vars:
-        # noqa var-naming[no-role-prefix]
-        rc_support: account
-        rc_group: framework_playbook
-        rc_number: 3004
-        rc_message: Failed to manage user or group
-
+      debug:
+        msg: "error"
+      
 # Load configuration winrm security for Root
 - name: Include configuration security for Root
   ansible.builtin.include_tasks: windows_configure_permissions.yml
