@@ -1,13 +1,14 @@
-- name: returncode
-  src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_returncode.git
-  scm: 'git'
-  version: 1.2/main
-- name: ansible_role_sfs_upload
-  src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_sfs_upload.git 
-  scm: git
-  version: 3.0/main
-# global socks tunnel role
-- name: ansible-role-event-socks-tunnel
-  src: https://github.kyndryl.net/Continuous-Engineering/ansible-role-event-socks-tunnel
-  scm: 'git'
-  version: 23.5/main
+---
+roles: []
+collections:
+  - name: ansible.windows
+    version: 2.1.0
+  - name: microsoft.ad
+    version: 1.3.0
+  - name: community.windows
+  - name: community.general
+    source: https://galaxy.ansible.com
+    version: 2.0.0
+  - name: community.crypto
+    version: 2.15.1
+  - name: ibm.power_aix
