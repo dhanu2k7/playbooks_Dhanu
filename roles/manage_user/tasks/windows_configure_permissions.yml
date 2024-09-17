@@ -20,12 +20,6 @@
           debug_all: true
 
   rescue:
-    - name: Something in block failed. Generate error.
-      ansible.builtin.include_role:
-        name: returncode
-      vars:
-        # noqa var-naming[no-role-prefix]
-        rc_support: account
-        rc_group: framework_playbook
-        rc_number: 3007
-        rc_message: "Failed to configure WMI and restart service"
+    - name: Could not create user. Generate error.
+      debug:
+        msg: "error"
