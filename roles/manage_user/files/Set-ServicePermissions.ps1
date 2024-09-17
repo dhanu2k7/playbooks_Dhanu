@@ -1,3 +1,4 @@
+
 [CmdletBinding()]
 Param (
     [parameter(Mandatory = $false, Position = 0)]
@@ -5,7 +6,7 @@ Param (
         [string] $user
 )
 
-
+Start-Transcript -Path C:\schneider\scriptingpath\test.txt
 # Log: Write to console or logfile
 Function Log($trace) {
     $current_time = Get-Date
@@ -419,6 +420,7 @@ try {
     Log "Main: Hostname is `"$script:localhost_name`""
 
     SetServicePermissions
+$script:log_filepath
 
 
     # Write error and warning summary to end of std output
@@ -438,3 +440,4 @@ catch {
 }
 
 
+stop-Transcript
