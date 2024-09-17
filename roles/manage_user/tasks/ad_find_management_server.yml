@@ -1,82 +1,82 @@
-- name: Debug windows_domain_role
-  debug:
-    var: ansible_facts['windows_domain_role']
+# - name: Debug windows_domain_role
+#   debug:
+#     var: ansible_facts['windows_domain_role']
 
-- name: AD Group - Check if the AD management group was defined and is populated
-  delegate_to: localhost
-  run_once: true
-  set_fact:
-    management_host_or_group_found: "{{ 'sl1_ad_management_group' in groups and groups['sl1_management_group'] | length > 0 }}"
+# - name: AD Group - Check if the AD management group was defined and is populated
+#   delegate_to: localhost
+#   run_once: true
+#   set_fact:
+#     management_host_or_group_found: "{{ 'sl1_ad_management_group' in groups and groups['sl1_management_group'] | length > 0 }}"
 
-- name: Block Use management host
-  when: not management_host_or_group_found
-  delegate_to: localhost
-  run_once: true
-  block:
+# - name: Block Use management host
+#   when: not management_host_or_group_found
+#   delegate_to: localhost
+#   run_once: true
+#   block:
 
-    - name: Management host - Check if a management host has been defined
-      set_fact:
-        sl1_management_machine: "{{ __sl1_management_machine_found | ternary(__sl1_management_machine_search.0.hostname, omit) }}"
-        management_host_found: "{{ __sl1_management_machine_found }}"
-      vars:
-        __sl1_management_machine_search: >
-          {{
-            (hostvars | dict2items(key_name='hostname', value_name='infos') |
-            selectattr('infos.sl1_management_machine', 'defined'))
-          }}
-        __sl1_management_machine_found: "{{ __sl1_management_machine_search | length > 0 }}"
+#     - name: Management host - Check if a management host has been defined
+#       set_fact:
+#         sl1_management_machine: "{{ __sl1_management_machine_found | ternary(__sl1_management_machine_search.0.hostname, omit) }}"
+#         management_host_found: "{{ __sl1_management_machine_found }}"
+#       vars:
+#         __sl1_management_machine_search: >
+#           {{
+#             (hostvars | dict2items(key_name='hostname', value_name='infos') |
+#             selectattr('infos.sl1_management_machine', 'defined'))
+#           }}
+#         __sl1_management_machine_found: "{{ __sl1_management_machine_search | length > 0 }}"
 
-    - name: Management host - Add the machine to the management group
-      add_host:
-        name: '{{ sl1_management_machine }}'
-        groups: sl1_management_group
-      when: management_host_found
+#     - name: Management host - Add the machine to the management group
+#       add_host:
+#         name: '{{ sl1_management_machine }}'
+#         groups: sl1_management_group
+#       when: management_host_found
 
-    - name: Management host - Acknowledge that such a machine was found
-      set_fact:
-        management_host_or_group_found: "{{ management_host_found }}"
-      when: management_host_found
+#     - name: Management host - Acknowledge that such a machine was found
+#       set_fact:
+#         management_host_or_group_found: "{{ management_host_found }}"
+#       when: management_host_found
 
-- name: Block auto selection
-  when: not management_host_or_group_found
-  delegate_to: localhost
-  run_once: true
-  block:
+# - name: Block auto selection
+#   when: not management_host_or_group_found
+#   delegate_to: localhost
+#   run_once: true
+#   block:
 
-    - name: Auto selection - Group windows servers per type
-      run_once: false
-      group_by:
-        key: "{{ ansible_facts['windows_domain_role'] | lower }}"
-      changed_when: false
+#     - name: Auto selection - Group windows servers per type
+#       run_once: false
+#       group_by:
+#         key: "{{ ansible_facts['windows_domain_role'] | lower }}"
+#       changed_when: false
 
-    - name: Auto selection - Select a domain controller if possible
-      add_host:
-        name: "{{ groups['primary-domain-controller'] | first }}"
-        groups: sl1_management_group
-      register: add_ad_servers
-      when: groups['primary-domain-controller'] | default([]) | length > 0
-      # changed_when: false
+#     - name: Auto selection - Select a domain controller if possible
+#       add_host:
+#         name: "{{ groups['primary-domain-controller'] | first }}"
+#         groups: sl1_management_group
+#       register: add_ad_servers
+#       when: groups['primary-domain-controller'] | default([]) | length > 0
+#       # changed_when: false
 
-    - name: Auto selection - Select a domain member server as a last resort
-      add_host:
-        name: "{{ groups['member-server'] | first }}"
-        groups: sl1_management_group
-      when:
-        - add_ad_servers is not changed
-        - groups['member-server'] | default([]) | length > 0
+#     - name: Auto selection - Select a domain member server as a last resort
+#       add_host:
+#         name: "{{ groups['member-server'] | first }}"
+#         groups: sl1_management_group
+#       when:
+#         - add_ad_servers is not changed
+#         - groups['member-server'] | default([]) | length > 0
 
-- name: Block exit
-  when: groups['sl1_management_group'] | default([]) | length < 1
+# - name: Block exit
+#   when: groups['sl1_management_group'] | default([]) | length < 1
 
-  block:
-    - name: Could not find any management host. Generate error.
-      include_role:
-        name: returncode
-      vars:
-        # noqa var-naming[no-role-prefix]
-        rc_support: account
-        rc_group: framework_playbook
-        rc_number: 3008
-        rc_message: "Could not find any host to manage account on AD."
-    - name: Stop everything, we can not continue
-      meta: end_batch
+#   block:
+#     - name: Could not find any management host. Generate error.
+#       include_role:
+#         name: returncode
+#       vars:
+#         # noqa var-naming[no-role-prefix]
+#         rc_support: account
+#         rc_group: framework_playbook
+#         rc_number: 3008
+#         rc_message: "Could not find any host to manage account on AD."
+#     - name: Stop everything, we can not continue
+#       meta: end_batch

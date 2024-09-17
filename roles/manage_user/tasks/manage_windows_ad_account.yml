@@ -1,7 +1,7 @@
 ---
 
-- name: Ensure a management server is selected
-  ansible.builtin.include_tasks: ad_find_management_server.yml
+# - name: Ensure a management server is selected
+#   ansible.builtin.include_tasks: ad_find_management_server.yml
 
 - name: Show the chosen management host
   delegate_to: localhost
