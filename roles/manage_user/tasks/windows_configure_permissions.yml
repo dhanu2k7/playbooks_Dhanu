@@ -6,7 +6,6 @@
         script: "{{ lookup('file', 'Set-WmiNamespaceSecurity.ps1') }}"
         parameters:
           user: "{{ sl1_account_name }}"
-          log_filepath: 'C:\\schneider\\scriptingpath\\'
       notify:
         - Restart wmi
 
