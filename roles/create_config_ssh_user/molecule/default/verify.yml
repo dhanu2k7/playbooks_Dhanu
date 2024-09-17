@@ -1,0 +1,28 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- hosts: all
+  gather_facts: false
+  vars:
+    user_name: krnsl101
+    file_path: /etc/sudoers.d/154_SCIENCELOGICL_RMIS_GLB
+  tasks:
+  - name: Check user if exist
+    user:
+      name: "{{ user_name }}"
+      state: present
+    check_mode: yes
+    register: user_status
+ 
+  - assert:
+      that:
+        - not user_status.changed 
+
+  - name: check for file if exist
+    stat:
+      path: "{{ file_path }}"
+    register: file_status
+
+  - assert:
+      that:
+        - file_status.stat.exists 

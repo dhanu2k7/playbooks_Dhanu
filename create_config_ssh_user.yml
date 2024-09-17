@@ -1,0 +1,6 @@
+---
+- name: Create ssh config
+  hosts: all
+  become: true
+  roles:
+    - create_config_ssh_user

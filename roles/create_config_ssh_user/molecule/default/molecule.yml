@@ -1,0 +1,34 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint: |
+  set -e
+  ansible-lint -x meta-incorrect,meta-no-info,package-latest,yaml,experimental,unnamed-task,fqcn-builtins 
+platforms:
+  - name: centos-8
+    image: samirerr/systemd-centos-8
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+    override_command: false
+  - name: ubuntu-20.04
+    image: samirerr/systemd-ubuntu-20.04
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: true
+    pre_build_image: true
+    override_command: false
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - create
+    - prepare
+    - converge
+    - verify
+

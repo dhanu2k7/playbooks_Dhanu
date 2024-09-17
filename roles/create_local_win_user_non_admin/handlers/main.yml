@@ -1,0 +1,7 @@
+---
+- name: Restart wmi
+  ansible.windows.win_service:
+    name: WinMgmt
+    state: restarted
+    force_dependent_services: true
+# handlers file for create_non_admin_user

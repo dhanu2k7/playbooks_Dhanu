@@ -1,0 +1,52 @@
+- name: Create and Add user to "{{ ad_grp_name }}"
+  block:
+    - name: Create new Domain Admin in Active Directory
+      community.windows.win_domain_user:
+        name: "{{ username }}"
+        password: "{{ pwd }}"
+        state: present
+        groups: "{{ ad_grp_name }}"
+        domain_username: "{{ ansible_user }}"
+        domain_password: "{{ ansible_password }}"
+        enabled: true
+      when: create_ad_user == "true"
+
+    - name: Set user's language to en-US
+      ansible.windows.win_shell: |
+        $username = "{{ username }}"
+        $password = "{{ pwd }}" | ConvertTo-SecureString -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential ($username, $password)
+        $registryPath = "HKCU:\Control Panel\International"
+        Invoke-Command -Credential $credential -ComputerName localhost -ScriptBlock {
+          $registryPath = "HKCU:\Control Panel\International"
+          Set-ItemProperty -Path $registryPath -Name "Locale" -Value "00000409"
+          Set-ItemProperty -Path $registryPath -Name "sShortDate" -Value "MM/dd/yyyy"
+          Set-ItemProperty -Path $registryPath -Name "sLongDate" -Value "dddd, MMMM d, yyyy"
+          Set-ItemProperty -Path $registryPath -Name "sDecimal" -Value "."
+          Set-ItemProperty -Path $registryPath -Name "sThousand" -Value ","
+          Set-ItemProperty -Path $registryPath -Name "sTimeFormat" -Value "h:mm:ss tt"
+          Set-ItemProperty -Path $registryPath -Name "iTime" -Value "0"
+          Set-ItemProperty -Path $registryPath -Name "iDate" -Value "0"
+          Set-ItemProperty -Path $registryPath -Name "iCalendarType" -Value "1"
+          Set-ItemProperty -Path $registryPath -Name "iFirstDayOfWeek" -Value "6"
+          Set-ItemProperty -Path $registryPath -Name "iFirstWeekOfYear" -Value "0"
+          Set-WinUserLanguageList -LanguageList en-US -Force
+          exit
+        }
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_success: true # noqa var-naming[no-role-prefix]
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: "Failed to create and add a user to admin group"

@@ -1,0 +1,59 @@
+---
+- name: Generate a Self-signed Certificate
+  ansible.builtin.include_tasks: generate_self_signed.yml
+  when: winrm_create_certificate | bool
+
+- name: Configuration of winrm settings
+  block:
+    - name: Configure WinRM settings using loop
+      ansible.windows.win_shell: winrm set {{ item.path }} '@{ {{ item.key }}="{{ item.value }}" }'
+      loop: "{{ winrm_config }}"
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_success: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3002
+        rc_message: "Failed to configure winrm"
+
+- name: Configure Firewall for WinRM
+  block:
+    - name: Open firewall rule for secure WinRM
+      community.windows.win_firewall_rule:
+        name: HTTPS for winrm
+        localport: 5986
+        action: allow
+        direction: in
+        protocol: tcp
+        profiles: domain,private
+        state: present
+        enabled: true
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_success: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3003
+        rc_message: "Failed to configure firewall for winrm"

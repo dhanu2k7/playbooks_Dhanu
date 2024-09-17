@@ -1,0 +1,4 @@
+---
+
+- name: Ensure upwarde compatibilit with config_secure_winrm
+  ansible.builtin.import_playbook: config_secure_winrm.yml

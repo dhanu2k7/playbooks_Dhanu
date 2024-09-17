@@ -1,0 +1,14 @@
+---
+# defaults file for config_secure_winrm
+winrm_create_certificate: true                    # Put true if you want generate self-signed cert and add an HTTPS listener
+winrm_allow_remote_access_value: true             # Enable Remote acces
+winrm_allow_remote_shell_access_value: true       # Enable remote shell acces
+winrm_certificate_service_value: false            # Enable Certificate-Authentication on the Server - service Authentication
+winrm_certificate_client_value: true              # Enable Certificate-Authentication on the Server - client Authentication
+winrm_max_connections_value: "300"                # Set the max Winrm request at one time
+winrm_idle_timeout_value: "7200000"
+winrm_path_certificate_key_in_localhost: "/tmp/{{ ansible_facts.hostname }}_certificate.key"
+winrm_path_certificate_csr_in_localhost: "/tmp/{{ ansible_facts.hostname }}_certificate.csr"
+winrm_path_certificate_in_localhost: "/tmp/{{ ansible_facts.hostname }}_certificate.crt"
+winrm_path_certificate_in_localhost_p12: "/tmp/{{ ansible_facts.hostname }}_certificate.p12"
+winrm_path_certificate_in_windows_server: "%Temp%\\certificate.pfx"

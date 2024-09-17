@@ -1,0 +1,21 @@
+---
+- name: Socks connection
+  hosts: localhost
+  connection: local
+  any_errors_fatal: true
+  vars:
+    acc_id: "{{ blueid_shortcode }}"
+    transaction_id: "{{ tower_job_id }}"
+  roles:
+    - role: ansible-role-event-socks-tunnel
+  tags:
+    - socks
+
+- name: Create AD win user admin
+  hosts: all
+  become: true
+  become_method: ansible.builtin.runas
+  become_user: "{{ ansible_user }}"
+
+  roles:
+    - role: create_ad_win_user_admin

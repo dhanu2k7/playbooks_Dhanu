@@ -1,0 +1,100 @@
+---
+- name: Create group and ssh user
+  block:
+    - name: Create group
+      ansible.builtin.group:
+        name: "{{ group_name }}"
+        state: present
+
+    - name: Create user
+      ansible.builtin.user:
+        name: "{{ user_name }}"
+        state: present
+        group: "{{ group_name }}"
+        password: "{{ user_password | password_hash('sha512') }}"
+        password_lock: "{{ pwd_lock }}"
+        expires: -1
+      tags:
+        - create_user
+      when: ansible_os_family != 'Solaris'
+    - name: Create user
+      shell:  |
+        /usr/sbin/useradd -d /export/home/sl1svc -m -g sl1svc -s /usr/bin/bash -c "668/S/*ABJ83/Kyndryl/Science Logic" sl1svc
+        /usr/bin/passwd -x -1 sl1svc
+        /usr/bin/passwd -s {{user_password}}
+      tags:
+        - create_user
+      when: ansible_os_family == 'Solaris'
+
+    - name: Setup password max expire Linux
+      ansible.builtin.shell: chage -M {{ pwd_expire_max }} {{ user_name }}
+      when: ansible_os_family == 'RedHat'
+
+    - name: setup password max expire for AIX
+      ansible.builtin.shell:   |
+       chuser maxexpired={{ pwd_expire_max }}  {{ user_name }}
+       chuser maxage=0  {{ user_name }}
+      when: ansible_os_family == 'AIX'
+
+    - name: setup password max expire for Solaris
+      ansible.builtin.shell:   |
+        /usr/bin/passwd -x -1 sl1svc
+      when: ansible_os_family == 'Solaris'
+
+    - name: Change permission at ssh folder
+      ansible.builtin.file:
+        state: directory
+        path: /{{home_path}}/{{ user_name }}/.ssh
+        mode: "0700"
+        group: "{{ group_name }}"
+        owner: "{{ user_name }}"
+
+    - name: Set up multiple authorized keys
+      ansible.builtin.shell: echo {{ public_key }} >> /{{home_path}}/{{ user_name }}/.ssh/authorized_keys
+
+    - name: Change permission at authorized_keys
+      ansible.builtin.file:
+        path: /{{home_path}}/{{ user_name }}/.ssh/authorized_keys
+        mode: "0600"
+        group: "{{ group_name }}"
+        owner: "{{ user_name }}"
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3004
+        rc_message: Failed to create user or group
+
+- name: Create visudo config
+  block:
+    - name: Create visudo config
+      become: true
+      ansible.builtin.template:
+        src: visudo.j2
+        dest: "{{ visudo_config }}"
+        mode: '0440'
+      tags:
+        - configuration_sudo
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_success: true # noqa var-naming[no-role-prefix]
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: developer
+        rc_group: framework_playbook
+        rc_number: 3005
+        rc_message: Failed to create visudo config
+# tasks file for create_config_ssh_user

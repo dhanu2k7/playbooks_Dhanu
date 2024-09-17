@@ -1,0 +1,4 @@
+username: sl1_toto
+pwd: P@ssword
+create_local_non_admin_user: "true" # true or false if you already have a user and just want to configure it
+dest_path: "C:\\Users"

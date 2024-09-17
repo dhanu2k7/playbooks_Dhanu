@@ -1,0 +1,31 @@
+---
+winrm_config:
+    - name: "Allow Remote Access"
+      path: "winrm/config/service"
+      key: "AllowRemoteAccess"
+      value: "{{ winrm_allow_remote_access_value }}"
+
+    - name: "Allow Remote Shell Access"
+      path: "winrm/config/winrs"
+      key: "AllowRemoteShellAccess"
+      value: "{{ winrm_allow_remote_shell_access_value }}"
+
+    - name: "Configure Certificate Auth service"
+      path: "winrm/config/service/auth"
+      key: "Certificate"
+      value: "{{ winrm_certificate_service_value }}"
+
+    - name: "Configure Certificate Auth client"
+      path: "winrm/config/client/auth"
+      key: "Certificate"
+      value: "{{ winrm_certificate_client_value }}"
+
+    - name: "Configure max requests at one time"
+      path: "winrm/config/service"
+      key: "MaxConnections"
+      value: "{{ winrm_max_connections_value }}"
+
+    - name: "Configure IdleTimeout"
+      path: "winrm/config/winrs"
+      key: "IdleTimeout"
+      value: "{{ winrm_idle_timeout_value }}"

@@ -1,0 +1,18 @@
+---
+namespace: continuous_engineering
+name: sl1
+version: 1.11.0
+readme: README.md
+authors:
+  - Nawel ADMI
+  - Aly Sileymane Ly
+  - David BOYER
+  - Fabien CHALON
+description:  SL1 management collection
+license_file: https://github.kyndryl.net/Continuous-Engineering/CE-Documentation/blob/master/files/LICENSE.md
+tags:
+  - sl1
+  - inventory
+  - automation
+  - ansible
+repository: https://github.kyndryl.net/Continuous-Engineering/ansible_collection_sl1_automation

@@ -1,0 +1,29 @@
+---
+- name: Create local Administrators User
+  block:
+    - name: Create local user and add in admin group
+      ansible.windows.win_user:
+        name: "{{ username }}"
+        password: "{{ pwd }}"
+        state: present
+        groups:
+          - "{{ local_admin_group }}"
+          - Remote Desktop Users
+
+    - name: Report success
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_success: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        # noqa var-naming[no-role-prefix]
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: Failed to create and add a user to local admin group

@@ -1,0 +1,25 @@
+---
+- name: Socks connection
+  hosts: localhost
+  connection: local
+  any_errors_fatal: true
+  vars:
+    acc_id: "{{ blueid_shortcode }}"
+    transaction_id: "{{ tower_job_id }}"
+  roles:
+    - role: ansible-role-event-socks-tunnel
+  tags:
+    - socks
+
+- hosts: all
+  become: true
+  become_method: runas
+  become_user: "{{ ansible_user_id }}"
+
+  roles:
+    - role: create_local_win_user_non_admin
+      vars:
+        username: my_user
+        pwd: my_password
+        create_local_non_admin_user: "true" # or false if you already have a user and just want to configure it
+        dest_path: "C:\\Users"

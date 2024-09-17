@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include create_config_ssh_user"
+      include_role:
+        name: "create_config_ssh_user"

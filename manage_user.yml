@@ -1,0 +1,20 @@
+---
+- name: Socks connection
+  hosts: localhost
+  connection: local
+  become: false
+  any_errors_fatal: true
+  vars:
+    acc_id: "{{ blueid_shortcode }}"
+    transaction_id: "{{ tower_job_id }}"
+  roles:
+    - ansible-role-event-socks-tunnel
+  tags:
+    - socks
+
+- name: Manage sl1 monitoring user
+  hosts: all
+  become: false
+  gather_facts: true
+  roles:
+    - manage_user

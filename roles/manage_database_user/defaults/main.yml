@@ -1,0 +1,3 @@
+---
+sl1_db_prerequisites_auto_install: true
+sl1_database_login_account_type: sql

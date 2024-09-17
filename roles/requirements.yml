@@ -1,0 +1,13 @@
+- name: returncode
+  src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_returncode.git
+  scm: 'git'
+  version: 1.2/main
+- name: ansible_role_sfs_upload
+  src: https://github.kyndryl.net/Continuous-Engineering/ansible_role_sfs_upload.git 
+  scm: git
+  version: 3.0/main
+# global socks tunnel role
+- name: ansible-role-event-socks-tunnel
+  src: https://github.kyndryl.net/Continuous-Engineering/ansible-role-event-socks-tunnel
+  scm: 'git'
+  version: 23.5/main

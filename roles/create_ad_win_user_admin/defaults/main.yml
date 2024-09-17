@@ -1,0 +1,5 @@
+# Create an Active Directory Domain Admin
+ad_grp_name: "Domain Admins"
+username: sl1_admin1
+pwd: P@ssword
+create_ad_user: "true"

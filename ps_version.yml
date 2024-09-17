@@ -1,0 +1,44 @@
+---
+- name: Socks connection
+  hosts: localhost
+  connection: local
+  any_errors_fatal: true
+  vars:
+    acc_id: "{{ blueid_shortcode }}"
+    transaction_id: "{{ tower_job_id }}"
+  roles:
+    - role: ansible-role-event-socks-tunnel
+  tags:
+    - socks
+    
+- hosts: "{{ joined_hosts }}" # noqa syntax-check[specific]
+  roles:
+  - role: identify_ps_version
+
+- hosts: localhost
+  tasks:
+  - name: Append content with psversion when it's defined
+    set_fact:
+      list_content: "{{ list_content|default([]) + [{'hostname': item, 'ps_version': hostvars[item]['psversion']}] }}"
+    when: hostvars[item]['psversion'] is defined
+    with_items: "{{ joined_hosts.split(',') }}"
+
+  - name: Append content with "UNREACHABLE" when psversion is undefined
+    set_fact:
+      list_content: "{{ list_content|default([]) + [{'hostname': item, 'ps_version': 'UNREACHABLE'}] }}"
+    when: hostvars[item]['psversion'] is undefined
+    with_items: "{{ joined_hosts.split(',') }}"
+
+  - name: Set result output
+    set_stats:
+      data:
+        kyautoapi_output: {
+          "message": "",
+          "code" : 0,
+          "result": "{{ list_content }}"
+        }
+      
+  - copy:
+      dest: files/data.json
+      content: "{{ list_content }}"
+  - command: python files/add_field_to_csv.py --column hostname --field hostname files/in.csv files/data.json

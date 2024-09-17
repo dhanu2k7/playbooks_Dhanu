@@ -1,0 +1,105 @@
+---
+- name: create local no Administrators User
+  block:
+    - name: Create local win user no admin and add in no admin group
+      win_user:
+        name: "{{ username }}"
+        password: "{{ pwd }}"
+        state: present
+        description: "744//S//*SE1WIN//KYNDRYL//Science logic  service account"
+
+    - name: Add no admin user in local groups
+      win_shell: |
+         net localgroup "{{item}}" "{{username}}" /add
+      loop:
+        - 'Distributed COM Users'
+        - 'Event Log Readers'
+        - 'Performance Log Users'
+        - 'Performance Monitor Users'
+        - 'Remote Management Users'
+  rescue:
+   - name: Something in block failed. Generate error.
+     include_role:
+       name: returncode
+     vars:
+       rc_support: account
+       rc_group: framework_playbook
+       rc_number: 3007
+       rc_message: "Failed to create local user no admin ad and add in local group"
+
+- name: configuration of winrm permissions
+  block:
+    - name: Set winrm permissions for the user
+      win_shell: |
+        $user_account="{{username}}"
+        $objUser = $null
+        $sid = $null
+        $user = $null
+        $domain = $null
+        $sid_obj = $null
+        if ($user_account.Contains('\')) {
+            $domainaccount = $user_account.Split('\')
+            $domain = $domainaccount[0]
+            $user = $domainaccount[1]
+        } elseif ($user_account.Contains('@')) {
+            $user, $domain = $user_account.Split('@') # both results will be send to the appropriate variable
+        } else {
+            $user = $user_account
+        }
+        try {
+            if (($domain -ne $null) -and ($domain.Length -gt 0)) {
+
+                $objUser = New-Object System.Security.Principal.NTAccount($domain, $user)
+            } else {
+                $objUser = New-Object System.Security.Principal.NTAccount($user)
+            }
+            if ($objUser -ne $null) {
+                $sid_obj = $objUser.Translate([System.Security.Principal.SecurityIdentifier])
+                $sid = $sid_obj.Value
+                $sid = $sid.ToString()
+            }
+        } catch {
+            throw "GetAccountSID: Exception caught while translating account to SID - detail - $_"
+        }
+        echo $sid
+        Set-Item -Path WSMan:\localhost\Service\RootSDDL -Value "O:NSG:BAD:P(A;;GA;;;BA)(A;;GXGR;;;$sid)(A;;GA;;;IU)S:P(AU;FA;GA;;;WD)(AU;SA;GXGW;;;WD)" -Force
+  rescue:
+    - name: Something in block failed. Generate error.
+      include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: "Failed to configure winrm"
+
+- name: configuration of wmi and restart service
+  block:
+    - name: Copy a script file
+      win_copy:
+        src: "{{ Wmi_script }}"
+        dest: "{{dest_path}}\\{{ Wmi_script }}"
+        force: yes
+
+    - name: Config security for Root
+      raw: '{{ dest_path }}\\{{ Wmi_script }} {{ username }}'
+      args:
+        warn: false
+        force_quotes: yes
+      register: command_output
+      notify:
+       - Restart wmi
+
+    - name: Debug command output
+      debug:
+        var: command_output
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: "Failed to configure WMI and restart service"

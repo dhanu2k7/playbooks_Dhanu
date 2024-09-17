@@ -1,0 +1,23 @@
+---
+- name: Socks connection
+  hosts: localhost
+  connection: local
+  any_errors_fatal: true
+  vars:
+    acc_id: "{{ blueid_shortcode }}"
+    transaction_id: "{{ tower_job_id }}"
+  roles:
+    - role: ansible-role-event-socks-tunnel
+  tags:
+    - socks
+
+- hosts: all
+  become: yes
+  become_method: runas
+  become_user: "{{ansible_user}}"
+
+  roles:
+    - role: remove_local_win_user_admin
+      vars:
+        username: sl1_user
+

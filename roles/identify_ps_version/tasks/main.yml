@@ -1,0 +1,40 @@
+---
+- block:
+  - name: identification for windows
+    block:
+    - name: execute command in server
+      win_shell: $PSVersionTable.PSVersion.ToString()
+      ignore_errors: true
+      register: psversion1
+    - name: execute command in server
+      win_shell: $(Get-Host).Version.ToString()
+      ignore_errors: true
+      register: psversion2
+    - name: select version from command 1
+      set_fact:
+        psversion: "{{ psversion1.stdout_lines | last }}"
+      when: psversion1.rc == 0
+    - name: select version from command 2
+      set_fact:
+        psversion: "{{ psversion2.stdout_lines | last }}"
+      when: (psversion1.rc != 0) and (psversion2.rc == 0)
+    - name: version impossible to be identified
+      set_fact:
+        psversion: "unidentified PowerShell version"
+      when: (psversion1.rc != 0) and (psversion2.rc != 0)
+    when: ansible_os_family|lower == "windows"
+  - name: empty value for no windows
+    block:
+    - name: empty return value
+      set_fact:
+        psversion: ""
+    when: ansible_os_family|lower != "windows"
+  rescue:
+    - name: Something in block failed. Generate error.
+      include_role:
+        name: returncode
+      vars:
+        rc_support: account 
+        rc_group: framework_playbook
+        rc_number: 5030
+        rc_message: "Failed to identify the PS version"
