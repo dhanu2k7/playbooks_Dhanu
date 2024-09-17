@@ -343,7 +343,7 @@ Start-Transcript C:\schneider\scriptingpath\test.txt
 # Script variables - values are passed in or later set through dialog entry
 $script:major_ps_ver = 1
 $script:set_wmi_inherit_obj = $false
-$script:log_filepath=c:\schneider\scriptingpath\test_log.txt
+$script:log_filepath="c:\schneider\scriptingpath\test_log.txt"
 $debug_all= true
 $script:account = $null
 $script:account_user = $null
