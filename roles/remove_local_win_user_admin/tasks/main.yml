@@ -1,0 +1,23 @@
+---
+- name: remove local user win admin
+  block:
+    - name: remove local user win admin
+      win_user:
+        name: "{{ username }}"
+        state: absent
+
+    - name: Report success
+      include_role:
+        name: returncode
+      vars:
+        rc_success: true
+
+  rescue:
+    - name: Something in block failed. Generate error.
+      include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3007
+        rc_message: "Failed to remove  a user to local admin group"

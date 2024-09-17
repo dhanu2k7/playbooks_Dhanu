@@ -1,0 +1,16 @@
+---
+- name: remove ad win user no admin active directory
+  win_command:
+   cmd: net user "{{username}}" /delete /domain /yes
+  when: remove_ad_user == "true"
+
+- name: remove user in local groups
+  win_command:
+    cmd: net localgroup "{{item}}" "{{domain_suffixe}}\{{username}}" /delete
+  loop:
+    - Distributed COM Users
+    - Event Log Readers
+    - Performance Log Users
+    - Performance Monitor Users
+    - Remote Management Users
+

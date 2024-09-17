@@ -1,0 +1,7 @@
+---
+- name: remove local win user no admin
+  block:
+    - name: remove local win user no admin
+      win_user:
+        name: "{{ username }}"
+        state: absent
