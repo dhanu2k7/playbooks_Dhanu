@@ -1,0 +1,81 @@
+---
+- name: Set fact
+  ansible.builtin.set_fact:
+    blockrescue_failed: false
+
+- name: Setup prerequisites for Database
+  block:
+    - name: Setup prerequisites for MySql
+      ansible.builtin.include_tasks: prerequisites_mysql.yml
+  when: sl1_db_prerequisites_auto_install | bool and not blockrescue_failed | bool
+- name: Create database user on mysql server
+  when: not blockrescue_failed | bool
+  block:
+    - name: Create database user
+      community.mysql.mysql_user:
+        name: "{{ sl1_database_username }}"
+        password: "{{ sl1_database_password }}"
+        login_host: "{{ sl1_database_host }}"
+        login_port: "{{ sl1_database_server_port }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        priv: "*.*:SELECT,SHOW DATABASES,USAGE,PROCESS,SUPER,GRANT OPTION,REPLICATION CLIENT,REPLICATION SLAVE"
+        state: present
+      register: output_user_mysql
+
+  rescue:
+    - name: Display an error message if the user is not created due to missing prerequisites
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3007
+        rc_message: "Failed to execute playbook, prerequisites are missing for mysql. Check logs !"
+      when: "'A MySQL module is required' in output_user_mysql.msg"
+
+    - name: Display an error message if the user is not created due to some other errors
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3010
+        rc_message: "Failed to create postgresql user"
+      when: "'A MySQL module is required' not in output_user_mysql.msg"
+    - name: Create db user blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Grant privileges to the new user
+  when: not blockrescue_failed | bool
+  block:
+    - name: "Grant privilege for database discovery on database {{ sl1_database_name }}"
+      community.mysql.mysql_user:
+        login_host: "{{ sl1_database_host }}"
+        login_port: "{{ sl1_database_server_port }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        name: "{{ sl1_database_username }}"
+        password: "{{ sl1_database_password }}"
+        priv: "{{ sl1_database_name }}.*:SELECT"
+  rescue:
+    - name: Display an error message if the privileges are not granted
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3011
+        rc_message: "Failed to grant privileges to the new user"
+
+    - name: Permissions blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Report success if all tasks are successfully
+  ansible.builtin.include_role:
+    name: returncode
+  vars:
+    rc_success: true
+  when: not blockrescue_failed | bool

@@ -1,0 +1,26 @@
+---
+- name: Check and install prerequisites for MSSQL on Windows Server
+  block:
+    - name: Ensure MSSQL is on a Windows system
+      ansible.builtin.assert:
+        that: "'windows' == ansible_facts.os_family | lower "
+        fail_msg: "This playbook only supports MSSQL on a Windows system"
+
+    - name: Install Powershell SqlServerDsc module
+      community.windows.win_psmodule:
+        name: SqlServerDsc
+        state: present
+
+  rescue:
+    - name: MSSQL prerequisites error
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3013
+        rc_message: "Failed to execute the playbook, prerequisites are missing for SQL Server. Check the logs!"
+
+    - name: MSSQL blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true

@@ -1,0 +1,58 @@
+---
+- name: Initialize facts
+  ansible.builtin.set_fact:
+    blockrescue_failed: false
+
+- name: Input Validation
+  block:
+    - name: Validate that sl1_database_login_account_type is sql or windows
+      ansible.builtin.assert:
+        that:
+          - sl1_database_login_account_type == "sql" or sl1_database_login_account_type == "windows"
+
+    - name: Validate general user inputs
+      ansible.builtin.assert:
+        that:
+          - item | default('') | length > 0
+      loop:
+        - "{{ sl1_database_name }}"
+        - "{{ sl1_database_username }}"
+        - "{{ sl1_database_host }}"
+        - "{{ sl1_database_server_port }}"
+        - "{{ sl1_database_login_user }}"
+        - "{{ sl1_database_login_password }}"
+        - "{{ sl1_database_type }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Validate sl1_database_password for sql login type
+      ansible.builtin.assert:
+        that:
+          - sl1_database_password | default('') | length > 0
+      when: sl1_database_login_account_type == "sql"
+
+    - name: Validate sl1_database_instance_name for MSSQL
+      ansible.builtin.assert:
+        that:
+          - sl1_database_instance_name | default('') | length > 0
+      when: sl1_database_type == 'mssql'
+
+  rescue:
+    - name: Display an error message for missing inputs
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: misconfiguration
+        rc_number: 3005
+        rc_message: "Some input parameters are missing. Check the logs!"
+
+    - name: Blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Execute Database Specific Tasks
+  when: not blockrescue_failed | bool
+  block:
+    - name: Include tasks for {{ sl1_database_type }}
+      ansible.builtin.include_tasks: manage_{{ sl1_database_type }}.yml

@@ -1,0 +1,21 @@
+---
+- name: Install prerequisites for MySQL on Linux
+  block:
+    - name: Install MySql package
+      become: true
+      ansible.builtin.package:
+        name:
+          - python3-pymysql
+        state: present
+  rescue:
+    - name: Failed to install MySQL prerequisites on Linux
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3013
+        rc_message: "Failed to install Linux prerequisites. Check logs!"
+    - name: MySQL Linux blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true

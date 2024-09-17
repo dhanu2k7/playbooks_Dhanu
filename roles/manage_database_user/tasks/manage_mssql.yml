@@ -1,0 +1,142 @@
+---
+- name: Set fact
+  ansible.builtin.set_fact:
+    blockrescue_failed: false
+
+- name: Setup prerequisites for Database
+  when: sl1_db_prerequisites_auto_install | bool and not blockrescue_failed | bool
+  block:
+    - name: Setup prerequisites for mssql
+      ansible.builtin.include_tasks: prerequisites_mssql.yml
+
+- name: Create login
+  when: not blockrescue_failed | bool
+  block:
+    - name: Create sql login in "{{ sl1_database_instance_name }}"
+      ansible.windows.win_dsc:
+        resource_name: SqlLogin
+        ServerName: "{{ sl1_database_host }}"
+        InstanceName: "{{ sl1_database_instance_name }}"
+        Name: "{{ sl1_database_username }}"
+        LoginType: 'SqlLogin'
+        LoginCredential_username: "{{ sl1_database_username }}"
+        LoginCredential_password: "{{ sl1_database_password }}"
+        PsDscRunAsCredential_username: "{{ sl1_database_login_user }}"
+        PsDscRunAsCredential_password: "{{ sl1_database_login_password }}"
+        Ensure: 'Present'
+      register: output_login_create
+      when: sl1_database_login_account_type == "sql"
+
+    - name: Create local login in "{{ sl1_database_instance_name }}"
+      ansible.windows.win_dsc:
+        resource_name: SqlLogin
+        ServerName: "{{ sl1_database_host }}"
+        InstanceName: "{{ sl1_database_instance_name }}"
+        Name: "{{ sl1_database_username }}"
+        LoginType: 'WindowsUser'
+        PsDscRunAsCredential_username: "{{ sl1_database_login_user }}"
+        PsDscRunAsCredential_password: "{{ sl1_database_login_password }}"
+        Ensure: 'Present'
+      register: output_login_create
+      when: sl1_database_login_account_type == "windows"
+  rescue:
+    - name: Handle errors related to login creation
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: login
+        rc_number: 3020
+        rc_message: "Failed to create MSSQL login. Check logs for details."
+    - name: Set blockrescue_failed to true after login creation failure
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Create user in databases
+  when: not blockrescue_failed | bool
+  block:
+    - name: Create user in {{ sl1_database_name }}, master and msdb
+      ansible.windows.win_dsc:
+        resource_name: SqlDatabaseUser
+        ServerName: "{{ sl1_database_host }}"
+        InstanceName: "{{ sl1_database_instance_name }}"
+        DatabaseName: "{{ item }}"
+        Name: "{{ sl1_database_username }}"
+        PsDscRunAsCredential_username: "{{ sl1_database_login_user }}"
+        PsDscRunAsCredential_password: "{{ sl1_database_login_password }}"
+        Ensure: 'Present'
+      loop:
+        - "{{ sl1_database_name }}"
+        - master
+        - msdb
+      register: output_user_db
+  rescue:
+    - name: Handle errors related to login creation
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: login
+        rc_number: 3019
+        rc_message: "Failed to create MSSQL user. Check logs for details."
+    - name: Set blockrescue_failed to true after user creation failure
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+- name: Grant DB_DATAREADER roles to relevant databases and permissions
+  when: not blockrescue_failed | bool
+  block:
+    - name: Grant DB_DATAREADER roles to affected databases
+      ansible.windows.win_dsc:
+        resource_name: SqlDatabaseRole
+        DatabaseName: "{{ item }}"
+        InstanceName: "{{ sl1_database_instance_name }}"
+        Name: 'db_datareader'
+        Members: "{{ sl1_database_username }}"
+        PsDscRunAsCredential_username: "{{ sl1_database_login_user }}"
+        PsDscRunAsCredential_password: "{{ sl1_database_login_password }}"
+        Ensure: 'Present'
+      loop:
+        - "{{ sl1_database_name }}"
+        - master
+        - msdb
+      register: db_datareader_results
+  rescue:
+    - name: Handle errors related to login creation
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: configuration
+        rc_number: 3018
+        rc_message: "Failed to create MSSQL login. Check logs for details."
+    - name: Set blockrescue_failed to true after login creation failure
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Grant permissions to user
+  when: not blockrescue_failed | bool
+  block:
+    - name: Execute PowerShell script for database permissions directly from template
+      ansible.windows.win_shell: "{{ lookup('template', 'grant_permissions.ps1.j2') }}"
+      register: server_level_perms_results
+
+  rescue:
+    - name: Handle errors based on exit codes from PowerShell script
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: "{{ server_level_perms_results.rc == 1 | ternary('3016', '3017') }}"
+        rc_message: "{{ server_level_perms_results.rc == 1 | ternary('Grant server-level permissions failed.', 'VIEW DATABASE STATE permission failed') }}"
+      when: server_level_perms_results.rc in [1, 2]
+    - name: Set blockrescue_failed to true for any PowerShell script execution error
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Report success if all tasks are successfully
+  when: not blockrescue_failed | bool
+  ansible.builtin.include_role:
+    name: returncode
+  vars:
+    rc_success: true

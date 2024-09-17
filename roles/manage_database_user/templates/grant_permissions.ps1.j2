@@ -1,0 +1,46 @@
+try {
+    $connection = New-Object System.Data.SqlClient.SqlConnection
+    $connection.ConnectionString = "Server={{ sl1_database_host }}\{{ sl1_database_instance_name }};Database=master;Integrated Security=True;"
+    $connection.Open()
+    $command = $connection.CreateCommand()
+    $command.CommandText = "USE master; GRANT VIEW DATABASE STATE TO [{{ sl1_database_username }}]"
+    $result = $command.ExecuteNonQuery()
+
+    if ($result -eq -1) {
+        Write-Host "Command executed successfully, but the number of affected rows is not applicable."
+    } else {
+        Write-Host "Number of rows affected: $result"
+    }
+} catch {
+    Write-Error "An error occurred: $_"
+    exit 1  # Exit code for the first block indicating the first type of error
+} finally {
+    if ($connection.State -eq "Open") {
+        $connection.Close()
+    }
+}
+$permissions = @("CONNECT SQL", "VIEW SERVER STATE", "CONNECT ANY DATABASE")
+foreach ($permission in $permissions) {
+    try {
+        $connection = New-Object System.Data.SqlClient.SqlConnection
+        $connection.ConnectionString = "Server={{ sl1_database_host }}\{{ sl1_database_instance_name }};Database=master;Integrated Security=True;"
+        $connection.Open()
+
+        $command = $connection.CreateCommand()
+        $command.CommandText = "USE master; GRANT $permission TO [{{ sl1_database_username }}]"
+        $result = $command.ExecuteNonQuery()
+
+        if ($result -eq -1) {
+            Write-Host "Granted $permission successfully, but the number of affected rows is not applicable."
+        } else {
+            Write-Host "Number of rows affected by granting ${permission}: $result"
+        }
+    } catch {
+        Write-Error "An error occurred while granting ${permission}: $_"
+        exit 2  # Exit code for the second block indicating the second type of error
+    } finally {
+        if ($connection.State -eq "Open") {
+            $connection.Close()
+        }
+    }
+}

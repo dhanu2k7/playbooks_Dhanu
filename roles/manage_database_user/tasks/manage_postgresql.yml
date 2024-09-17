@@ -1,0 +1,124 @@
+---
+- name: Set fact
+  ansible.builtin.set_fact:
+    blockrescue_failed: false
+
+- name: Setup prerequisites for Database
+  when: sl1_db_prerequisites_auto_install | bool and not blockrescue_failed | bool
+  block:
+    - name: Setup prerequisites for PostgreSql
+      ansible.builtin.include_tasks: prerequisites_postgresql.yml
+
+
+- name: Create database user on postgresql server
+  when: not blockrescue_failed | bool
+  block:
+    - name: Create database user
+      community.postgresql.postgresql_user:
+        db: "{{ sl1_database_name }}"
+        login_host: "{{ sl1_database_host }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        login_port: "{{ sl1_database_server_port }}"
+        name: "{{ sl1_database_username }}"
+        password: "{{ sl1_database_password }}"
+        priv: CONNECT
+        state: present
+      register: output_user_postgres
+
+  rescue:
+    - name: Display an error message if the user is not created due to missing prerequisites
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3008
+        rc_message: "Failed to execute playbook, prerequisites are missing for postgres. Check logs !"
+
+    - name: Display an error message if the user is not created due to missing configuration
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3009
+        rc_message: "Failed to execute playbook, configuration is missing. Check logs !"
+      when: "'no pg_hba.conf entry' in output_user_postgres.msg"
+
+    - name: Display an error message if the user is not created
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3020
+        rc_message: "Failed to create postgresql user"
+      when:
+        - "'no pg_hba.conf entry' not in output_user_postgres.msg"
+    - name: Create db user blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Grant privileges to the new user
+  when: not blockrescue_failed | bool
+  block:
+    - name: "Grant privilege CONNECT privilege on database {{ sl1_database_name }}"
+      community.postgresql.postgresql_privs:
+        db: "{{ sl1_database_name }}"
+        login_host: "{{ sl1_database_host }}"
+        login_port: "{{ sl1_database_server_port }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        role: "{{ sl1_database_username }}"
+        privs: CONNECT
+        type: database
+
+    # default_privs is defined as a list of privilege specifications.
+    # Each specification includes the object type (e.g., "TABLE" or "SCHEMA")
+    # and the privileges (e.g., "SELECT", "INSERT", "UPDATE", "DELETE", etc.) that you want to grant to the role.
+
+    - name: Grant privilege SELECT on TABLES of the database {{ sl1_database_name }}
+      community.postgresql.postgresql_privs:
+        db: "{{ sl1_database_name }}"
+        login_host: "{{ sl1_database_host }}"
+        login_port: "{{ sl1_database_server_port }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        role: "{{ sl1_database_username }}"
+        privs: SELECT
+        objs: TABLES
+        type: default_privs
+        # privs: ALL
+        # objs: TABLES,SEQUENCES,TYPES,FUNCTIONS
+
+    - name: Grant READ privilege of the schema public of the database {{ sl1_database_name }}
+      community.postgresql.postgresql_privs:
+        db: "{{ sl1_database_name }}"
+        login_host: "{{ sl1_database_host }}"
+        login_port: "{{ sl1_database_server_port }}"
+        login_user: "{{ sl1_database_login_user }}"
+        login_password: "{{ sl1_database_login_password }}"
+        role: "{{ sl1_database_username }}"
+        privs: SELECT
+        objs: ALL_IN_SCHEMA
+
+  rescue:
+    - name: Display an error message if the privileges are not granted
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: framework_playbook
+        rc_number: 3021
+        rc_message: "Failed to grant privileges to the new user"
+    - name: Permissions blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
+
+- name: Report success if all tasks are successfully
+  ansible.builtin.include_role:
+    name: returncode
+  vars:
+    rc_success: true
+  when: not blockrescue_failed | bool

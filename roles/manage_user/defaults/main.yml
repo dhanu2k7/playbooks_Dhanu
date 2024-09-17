@@ -1,0 +1,11 @@
+# defaults file for roles/manage_user
+sl1_account_name: sl1
+sl1_account_group: sl1mon
+sl1_account_location: ad
+sl1_account_state: present
+sl1_account_admin: false
+sl1_permissions_location: local
+sl1_manage_user: true
+sl1_manage_permissions: true
+sl1_password_lock: true
+sl1_visudo_template: /etc/sudoers.d/154_SCIENCELOGICL_RMIS_GLB

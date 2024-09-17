@@ -1,0 +1,21 @@
+---
+- name: Install prerequisites for PostgreSql on Linux
+  block:
+    - name: Ensure prerequisites are installed
+      become: true
+      ansible.builtin.package:
+        name:
+          - python3-psycopg2
+        state: present
+  rescue:
+    - name: Failed to install PostgreSql prerequisites on Linux
+      ansible.builtin.include_role:
+        name: returncode
+      vars:
+        rc_support: account
+        rc_group: prerequisite
+        rc_number: 3013
+        rc_message: "Failed to install PostgreSql prerequisites. Check logs!"
+    - name: PostgreSql Linux blockrescue
+      ansible.builtin.set_fact:
+        blockrescue_failed: true
