@@ -6,7 +6,7 @@ Param (
         [string] $user
 )
 
-$script:log_filepath=c:\schneider\scriptingpath\test.txt
+$script:log_filepath=c:\schneider\scriptingpath\test_log.txt
 # Log: Write to console or logfile
 Function Log($trace) {
     $current_time = Get-Date
