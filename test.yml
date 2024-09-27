@@ -1,0 +1,44 @@
+- name: test playbook
+  hosts: all
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: set_fact
+      set_fact:
+        ssh1: "{{ lookup('env', 'private_key_file') }}"
+    #  delegate_to: localhost
+    - name: set_fact
+      set_fact:
+        ssh2: "{{ lookup('env', 'private_key_file ') }}"
+      delegate_to: localhost
+    - name: set_fact
+      set_fact:
+        ssh3: "{{ lookup('env', 'ansible_ssh_private_key_file') }}"
+      #delegate_to: localhost
+    - name: set_fact
+      set_fact:
+       ssh4: "{{ lookup('env', 'ansible_ssh_private_key_file') }}"
+      delegate_to: localhost
+    - name: set_fact
+      set_fact:
+       lurl:  "{{ lookup('env', 'ANSIBLE_PARAMIKO_PRIVATE_KEY_FILE') or listener_url }}"
+      delegate_to: localhost
+      ignore_errors: true
+    - name: set_fact
+      set_fact:
+       tokens: "{{ lookup('env', 'LISTENER_TOKEN')  or listener_token }}"
+      delegate_to: localhost
+      ignore_errors: true
+    - name: debug
+      debug:
+        msg: "{{ lookup('file', ssh1) }}"
+    - name: debug
+      debug:
+        msg: "{{ lookup('file', ssh2) }}"
+    - name: debug
+      debug:
+        msg: "{{ lookup('file', ssh3) }}"
+    - name: debug
+      debug:
+        msg: "{{ lookup('file', ssh4) }}"
