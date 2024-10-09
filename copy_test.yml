@@ -9,7 +9,7 @@
     - debug: var=ssh1
     - name: debug
       debug:
-        msg: "{{ lookup('file', ssh1) }}"
+        msg: "{{ lookup('env',ansible_os_name) }}"
     - name: debug
       debug:
         msg: "{{ lookup('file', ssh2) }}"
