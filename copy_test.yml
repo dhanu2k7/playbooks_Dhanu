@@ -7,5 +7,5 @@
         os_ver: "{{ansible_os_name|regex_replace('[^\\d]','')}}"
     - name: copy cve files
       win_copy:
-        src: files/Windows_server_{{os_ver}}
-        dest: C:\windows\temp\Windows_server_{{os_ver}}
+        src: files/Windows_server_{{os_ver}}.csv
+        dest: C:\windows\temp\Windows_server_{{os_ver}}.csv
