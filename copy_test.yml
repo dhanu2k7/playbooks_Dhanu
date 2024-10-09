@@ -3,19 +3,10 @@
   connection: local
   gather_facts: true
   tasks:
-    - name: set_fact
-      set_fact:
-        ssh1: "{{ ansible_os_name }}"
-    - debug: var=ssh1
-    - name: debug
-      debug:
-        msg: "{{ lookup('env',ansible_os_name) }}"
-    - name: debug
-      debug:
-        msg: "{{ lookup('file', ssh2) }}"
-    - name: debug
-      debug:
-        msg: "{{ lookup('file', ssh3) }}"
-    - name: debug
-      debug:
-        msg: "{{ lookup('file', ssh4) }}"
+ - name: gather OS version
+  set_facts:
+     os_ver: "{{lookup('env','ansible_os_version')|default('ALL',True)| regex_replace ('[^\\d]','')}}"
+- name: copy cve files
+  win_copy:
+    src: files/Windows_server_{{os_ver}}
+    dest: C:\windows\temp\Windows_server_{{os_ver}}
