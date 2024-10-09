@@ -4,7 +4,7 @@
   tasks:
     - name: gather OS version
       set_fact:
-        os_ver: "{{ansible_os_version|default('ALL',True)| regex_replace ('(^\d)','')}}"
+        os_ver: "{{ansible_os_version|default('ALL',True)| regex_replace ('(^\\d)','')}}"
     - name: copy cve files
       win_copy:
         src: files/Windows_server_{{os_ver}}
