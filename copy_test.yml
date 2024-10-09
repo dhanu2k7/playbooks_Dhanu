@@ -4,7 +4,7 @@
   tasks:
     - name: gather OS version
       set_fact:
-        os_ver: "{{lookup('env','ansible_os_name')}}"
+        os_ver: "{{lookup('env', 'ansible_os_name')}}"
     - name: copy cve files
       win_copy:
         src: files/Windows_server_{{os_ver}}
