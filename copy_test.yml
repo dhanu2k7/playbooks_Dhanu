@@ -1,10 +1,9 @@
 - name: test playbook
   hosts: all
-  connection: local
   gather_facts: true
   tasks:
     - name: gather OS version
-      set_facts:
+      set_fact:
         os_ver: "{{lookup('env','ansible_os_version')|default('ALL',True)| regex_replace ('[^\\d]','')}}"
     - name: copy cve files
       win_copy:
