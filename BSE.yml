@@ -1,0 +1,13 @@
+- name: test playbook
+  hosts: all
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: running powershell
+      scan_bse:
+        names: "{{ n}}"
+      register: output
+    - name: debug
+      debug: var= output
+        
