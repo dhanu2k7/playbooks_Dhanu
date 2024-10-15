@@ -1,8 +1,7 @@
 - name: test playbook
-  hosts: all
+  hosts: win
   connection: local
   gather_facts: true
-
   tasks:
     - name: running powershell
       scan_bse:
