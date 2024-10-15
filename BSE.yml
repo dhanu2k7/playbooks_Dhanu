@@ -8,5 +8,4 @@
         names: "{{ n}}"
       register: output
     - name: debug
-      debug: var= output
-        
+      debug: var=output
