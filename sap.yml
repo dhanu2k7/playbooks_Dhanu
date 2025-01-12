@@ -69,6 +69,7 @@
               else
                 echo CI_FLAG="FALSE" >> $LOGFILE 2>&1
               fi
+              cat $LOGFILE
             exit
      register: flag
      become: true
