@@ -325,4 +325,4 @@
      register: orastatus
      ignore_errors: true
      when:
-       - ora_flag |bool
+       - dbflag |bool
