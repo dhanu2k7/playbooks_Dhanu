@@ -1,6 +1,6 @@
 ---
 - name: Prepare execution-generic environment
-  hosts: localhost
+  hosts: all
   gather_facts: false
   tasks:
    - name: set flags for CI SAP and DB
