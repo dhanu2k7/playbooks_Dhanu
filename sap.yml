@@ -5,72 +5,72 @@
   tasks:
    - name: set flags for CI SAP and DB
      shell: |
-        #!/bin/sh
-          LOGFILE=/tmp/saplog.log
-          DATE=`date '+%m/%d/%Y %H:%M:%S %Z'`
-              if [ -d /usr/sap ]; then
-                    for dir in `ls -l /usr/sap/ | grep -v total | awk '{print $9}' | egrep -x '.{1,3}' | grep -oP "\w*[A-Z]+\w*"`
-                    do
-                      BOBJ_Inst=`find /usr/sap/${dir} -name sap_bobj |wc -l`
-                        if [[ ${BOBJ_Inst} -ge 1 ]]; then
-                             let BOBJ_Inst_Count=${BOBJ_Inst_Count}+1
-                        else
-                              let BOBJ_Inst_Count=${BOBJ_Inst_Count}+0
-                            fi
-                  done
-              else
-                let BOBJ_Inst_Count=${BOBJ_Inst_Count}+0
-              fi
-              if [ -e /usr/sap/hostctrl/exe/lssap ]; then
-                  StdABAPJAVA_Inst_Count=`/usr/sap/hostctrl/exe/lssap |grep -v lssap |grep -v '\=\=' |grep -v SAPLOCALHOST |awk -F'|' -v OFS=',' '{print $1, $2}' |grep -v DAA|tr -d ' '|uniq |wc -l`
-              else
-                  StdABAPJAVA_Inst_Count=0
-              fi
-              if [ $BOBJ_Inst_Count -ge 1 ] || [ $StdABAPJAVA_Inst_Count -ge 1 ]; then
-              {
-                if [ $StdABAPJAVA_Inst_Count -ge 1 ]; then
-                  {
-                   echo SAP_FLAG="TRUE" >> $LOGFILE 2>&1
-                  }
-                elif [ $BOBJ_Inst_Count -ge 1 ]; then
-                        {
-                    echo SAP_FLAG="TRUE" >> $LOGFILE 2>&1
-                  }
-                else
-                  {
-                    echo SAP_FLAG="FALSE" >> $LOGFILE 2>&1
-                  }
-                fi
+      #!/bin/sh
+        LOGFILE=/tmp/saplog.log
+        DATE=`date '+%m/%d/%Y %H:%M:%S %Z'`
+            if [ -d /usr/sap ]; then
+                  for dir in `ls -l /usr/sap/ | grep -v total | awk '{print $9}' | egrep -x '.{1,3}' | grep -oP "\w*[A-Z]+\w*"`
+                  do
+                    BOBJ_Inst=`find /usr/sap/${dir} -name sap_bobj |wc -l`
+                      if [[ ${BOBJ_Inst} -ge 1 ]]; then
+                           let BOBJ_Inst_Count=${BOBJ_Inst_Count}+1
+                      else
+                            let BOBJ_Inst_Count=${BOBJ_Inst_Count}+0
+                          fi
+                done
+            else
+              let BOBJ_Inst_Count=${BOBJ_Inst_Count}+0
+            fi
+            if [ -e /usr/sap/hostctrl/exe/lssap ]; then
+                StdABAPJAVA_Inst_Count=`/usr/sap/hostctrl/exe/lssap |grep -v lssap |grep -v '\=\=' |grep -v SAPLOCALHOST |awk -F'|' -v OFS=',' '{print $1, $2}' |grep -v DAA|tr -d ' '|uniq |wc -l`
+            else
+                StdABAPJAVA_Inst_Count=0
+            fi
+            if [ $BOBJ_Inst_Count -ge 1 ] || [ $StdABAPJAVA_Inst_Count -ge 1 ]; then
+            {
+              if [ $StdABAPJAVA_Inst_Count -ge 1 ]; then
+                {
+                 echo SAP_FLAG="TRUE" > $LOGFILE 2>&1
+                }
+              elif [ $BOBJ_Inst_Count -ge 1 ]; then
+                      {
+                  echo SAP_FLAG="TRUE" > $LOGFILE 2>&1
                 }
               else
                 {
-                  echo SAP_FLAG="FALSE" >> $LOGFILE 2>&1
+                  echo SAP_FLAG="FALSE" > $LOGFILE 2>&1
                 }
               fi
-              if [ -e /oracle ]; then
-                 ORA_count=`ls -ld /oracle/*/sapdata* |awk -F'/' '{print $3}' |tr -d ' '|uniq |wc -l`
-                 if [ $ORA_count -ge 1 ]; then
-                   echo DB_FLAG="TRUE" >> $LOGFILE 2>&1
-                 else
-                   echo DB_FLAG="FALSE" >> $LOGFILE 2>&1
-                 fi
-              else
-                 echo DB_FLAG="FALSE" >> $LOGFILE 2>&1
-              fi
+              }
+            else
+              {
+                echo SAP_FLAG="FALSE" > $LOGFILE 2>&1
+              }
+            fi
 
-              if [ -e /usr/sap ]; then
-                CI=`ps -ef | egrep -i 'ms.sap' `
-                CI1=`ps -ef | egrep -i 'dw' `
-                if [[ $CI -ge 1 ]] && [[ $CI1 -ge 1 ]]; then
-                  echo CI_FLAG="TRUE" >> $LOGFILE 2>&1
-                else
-                  echo CI_FLAG="FALSE" >> $LOGFILE 2>&1
-                fi
+            if [ -e /oracle ]; then
+               ORA_count=`ls -ld /oracle/*/sapdata* |awk -F'/' '{print $3}' |tr -d ' '|uniq |wc -l`
+               if [ $ORA_count -ge 1 ]; then
+                 echo DB_FLAG="TRUE" >> $LOGFILE 2>&1
+               else
+                 echo DB_FLAG="FALSE" >> $LOGFILE 2>&1
+               fi
+            else
+               echo DB_FLAG="FALSE" >> $LOGFILE 2>&1
+            fi
+
+            if [ -e /usr/sap ]; then
+              CI=`ps -ef | egrep -i 'ms.sap' `
+              CI1=`ps -ef | egrep -i 'dw' `
+              if [[ $CI -ge 1 ]] && [[ $CI1 -ge 1 ]]; then
+                echo CI_FLAG="TRUE" >> $LOGFILE 2>&1
               else
                 echo CI_FLAG="FALSE" >> $LOGFILE 2>&1
               fi
-              cat $LOGFILE
-            exit
+            else
+              echo CI_FLAG="FALSE" >> $LOGFILE 2>&1
+            fi
+         cat  $LOGFILE
      register: flag
      become: true
    - name: setting flags at ansible level
