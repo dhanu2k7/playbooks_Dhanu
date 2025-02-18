@@ -1,0 +1,10 @@
+---
+- hosts: all
+  become: yes
+  become_method: runas
+  become_user: "{{machine_user}}"
+
+  roles:
+    - role: remove_local_win_user_non_admin
+      vars:
+        username: sl1_user

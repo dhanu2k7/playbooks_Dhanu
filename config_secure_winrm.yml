@@ -1,17 +1,11 @@
 ---
-- name: Socks connection
-  hosts: localhost
+- name: Winrm
+  hosts: all
   connection: local
-  any_errors_fatal: true
-  vars:
-    acc_id: "{{ blueid_shortcode }}"
-    transaction_id: "{{ tower_job_id }}"
-  roles:
-    - ansible-role-event-socks-tunnel
-  tags:
-    - socks
+  gather_facts: true
 
 - name: Configure WinRM
   hosts: all
+  gather_facts: true
   roles:
     - config_secure_winrm

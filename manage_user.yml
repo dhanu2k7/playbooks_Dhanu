@@ -4,4 +4,4 @@
   become: false
   gather_facts: true
   roles:
-    - manage_user
+    - config_secure_winrm
